@@ -1,12 +1,10 @@
 # Ansible Config for Pis Terminals to present Home Assistant Dashboards
 
 
-# WIP notes
+## Terminal Notes
 
-  * To make Ansible work with password protected SSH keys, edit ~/.ssh/config to contain
-    ```
-    Host *
-       AddKeysToAgent yes
-    ```
-   Make sure that ssh-agent is running, then connecting
-  * Add all SSH publiy keys for all hosts in the inventory to ~/.ssh/config
+### Manual initalizing
+
+  * Install Raspberry Pi OS
+  * Put public SSH key to `/root/.ssh/authorized_keys`
+  * Edit `etc/ssh/sshd_config` to contain `PermitRootLogin prohibit-password` and `PubkeyAuthentication yes`

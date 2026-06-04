@@ -1,0 +1,9 @@
+- name: Configure the terminals
+  hosts: terminals
+  tasks:
+  - name: Update via apt
+    become: yes
+    ansible.builtin.apt:
+      update_cache: yes
+      autoremove: yes
+      upgrade: yes
