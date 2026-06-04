@@ -7,3 +7,72 @@
       update_cache: yes
       autoremove: yes
       upgrade: yes
+    register: apt_result
+  - name: Create systemd user directory for terminal
+    become: yes
+    ansible.builtin.file:
+      path: /home/terminal/.config/systemd/user
+      state: directory
+      owner: terminal
+      group: terminal
+      mode: "0755"
+
+  - name: Install Firefox Terminal user service
+    become: yes
+    ansible.builtin.copy:
+      dest: /home/terminal/.config/systemd/user/firefox-terminal.service
+      owner: terminal
+      group: terminal
+      mode: "0644"
+      content: |
+        [Unit]
+        Description=Firefox Terminal
+        After=graphical-session.target
+
+        [Service]
+        Type=simple
+        Environment=MOZ_ENABLE_WAYLAND=1
+        ExecStart=/usr/bin/firefox --kiosk
+        Restart=on-failure
+
+        [Install]
+        WantedBy=default.target
+    register: copy_result
+
+  - name: Reload user systemd and enable Firefox kiosk service
+    become: yes
+    become_user: terminal
+    environment:
+      XDG_RUNTIME_DIR: /run/user/1000
+    ansible.builtin.systemd_service:
+      name: firefox-terminal.service
+      scope: user
+      enabled: yes
+      state: started
+      daemon_reload: no
+
+  - name: Set Firefox as default browser via mimeapps.list
+    become: yes
+    ansible.builtin.copy:
+      dest: /home/terminal/.config/mimeapps.list
+      owner: terminal
+      group: terminal
+      mode: "0644"
+      content: |
+        [Default Applications]
+        x-scheme-handler/http=firefox.desktop
+        x-scheme-handler/https=firefox.desktop
+        x-scheme-handler/about=firefox.desktop
+        x-scheme-handler/unknown=firefox.desktop
+        text/html=firefox.desktop  
+
+  - name: Set Firefox as default browser via xdg-settings
+    become: yes
+    become_user: terminal
+    ansible.builtin.command: xdg-settings set default-web-browser firefox.desktop
+    changed_when: false
+
+  - name: Reboot 
+    ansible.builtin.reboot:
+      reboot_timeout: 3600
+    when: apt_result.changed or copy_result.changed
