@@ -115,13 +115,20 @@
         x-scheme-handler/https=firefox.desktop
         x-scheme-handler/about=firefox.desktop
         x-scheme-handler/unknown=firefox.desktop
-        text/html=firefox.desktop  
+        text/html=firefox.desktop
+    register: mimeapps_file
 
-  - name: Set Firefox as default browser via xdg-settings
+  - name: Check system default browser alternative
     become: yes
-    become_user: terminal
-    ansible.builtin.command: xdg-settings set default-web-browser firefox.desktop
+    ansible.builtin.command: readlink -f /etc/alternatives/x-www-browser
+    register: xwww_browser
     changed_when: false
+
+  - name: Set Firefox as system default browser
+    become: yes
+    ansible.builtin.command: update-alternatives --set x-www-browser /usr/bin/firefox
+    register: browser_alternative
+    when: xwww_browser.stdout | trim != "/usr/bin/firefox"
 
   - name: Reboot 
     ansible.builtin.reboot:
@@ -129,4 +136,6 @@
     when: >-
       apt_result.changed or
       labwc_autostart.changed or
-      firefox_user_js.changed
+      firefox_user_js.changed or
+      mimeapps_file.changed or
+      browser_alternative.changed
