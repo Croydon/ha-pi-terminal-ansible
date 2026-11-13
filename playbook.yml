@@ -44,48 +44,40 @@
     register: update_locale
     changed_when: update_locale.rc == 0
 
-  - name: Create systemd user directory for terminal
+  - name: Remove legacy Firefox user service
     become: yes
     ansible.builtin.file:
-      path: /home/terminal/.config/systemd/user
+      path: /home/terminal/.config/systemd/user/firefox-terminal.service
+      state: absent
+    register: legacy_service
+
+  - name: Create labwc configuration directory
+    become: yes
+    ansible.builtin.file:
+      path: /home/terminal/.config/labwc
       state: directory
       owner: terminal
       group: terminal
       mode: "0755"
 
-  - name: Install Firefox Terminal user service
+  - name: Install Firefox labwc autostart entry
     become: yes
     ansible.builtin.copy:
-      dest: /home/terminal/.config/systemd/user/firefox-terminal.service
+      dest: /home/terminal/.config/labwc/autostart
       owner: terminal
       group: terminal
-      mode: "0644"
+      mode: "0755"
       content: |
-        [Unit]
-        Description=Firefox Terminal
-        After=graphical-session.target
+        #!/bin/sh
+        /usr/bin/firefox --kiosk >/dev/null 2>&1 &
+    register: labwc_autostart
 
-        [Service]
-        Type=simple
-        Environment=MOZ_ENABLE_WAYLAND=1
-        ExecStart=/usr/bin/firefox --kiosk
-        Restart=on-failure
-
-        [Install]
-        WantedBy=default.target
-    register: copy_result
-
-  - name: Reload user systemd and enable Firefox kiosk service
+  - name: Remove legacy XDG Firefox autostart entry
     become: yes
-    become_user: terminal
-    environment:
-      XDG_RUNTIME_DIR: /run/user/1000
-    ansible.builtin.systemd_service:
-      name: firefox-terminal.service
-      scope: user
-      enabled: yes
-      state: started
-      daemon_reload: no
+    ansible.builtin.file:
+      path: /home/terminal/.config/autostart/firefox-terminal.desktop
+      state: absent
+    register: xdg_autostart_removed
 
   - name: Set Firefox as default browser via mimeapps.list
     become: yes
@@ -111,4 +103,8 @@
   - name: Reboot 
     ansible.builtin.reboot:
       reboot_timeout: 3600
-    when: apt_result.changed or copy_result.changed
+    when: >-
+      apt_result.changed or
+      legacy_service.changed or
+      labwc_autostart.changed or
+      xdg_autostart_removed.changed
