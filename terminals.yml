@@ -84,6 +84,25 @@
         /usr/bin/firefox --kiosk {{ kiosk_website }} >/dev/null 2>&1 &
     register: labwc_autostart
 
+  - name: Create Firefox policy directory
+    become: yes
+    ansible.builtin.file:
+      path: /usr/lib/firefox/distribution
+      state: directory
+      owner: root
+      group: root
+      mode: "0755"
+
+  - name: Install Firefox policies
+    become: yes
+    ansible.builtin.copy:
+      src: terminals/files/firefox/policies.json
+      dest: /usr/lib/firefox/distribution/policies.json
+      owner: root
+      group: root
+      mode: "0644"
+    register: firefox_policies
+
   - name: Find Firefox profiles
     become: yes
     ansible.builtin.find:
@@ -145,6 +164,7 @@
       apt_result.changed or
       firefox_language_pack.changed or
       labwc_autostart.changed or
+      firefox_policies.changed or
       firefox_user_js.changed or
       mimeapps_file.changed or
       browser_alternative.changed
