@@ -21,6 +21,14 @@
       state: present
       update_cache: no
 
+  - name: Ensure Firefox German language pack is installed
+    become: yes
+    ansible.builtin.apt:
+      name: firefox-l10n-de
+      state: present
+      update_cache: no
+    register: firefox_language_pack
+
   - name: Enable de_DE UTF-8 locale
     become: yes
     ansible.builtin.lineinfile:
@@ -135,6 +143,7 @@
       reboot_timeout: 3600
     when: >-
       apt_result.changed or
+      firefox_language_pack.changed or
       labwc_autostart.changed or
       firefox_user_js.changed or
       mimeapps_file.changed or
