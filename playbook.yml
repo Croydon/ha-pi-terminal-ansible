@@ -8,6 +8,36 @@
       autoremove: yes
       upgrade: yes
     register: apt_result
+
+  - name: Ensure locales package is installed
+    become: yes
+    ansible.builtin.apt:
+      name: locales
+      state: present
+      update_cache: no
+
+  - name: Generate de_DE UTF-8 locale
+    become: yes
+    ansible.builtin.command: locale-gen de_DE.UTF-8
+    args:
+      creates: /usr/lib/locale/de_DE.utf8
+    register: locale_gen
+    changed_when: locale_gen.rc == 0
+
+  - name: Set system default locale to German
+    become: yes
+    ansible.builtin.copy:
+      dest: /etc/default/locale
+      content: |
+        LANG=de_DE.UTF-8
+    register: locale_file
+
+  - name: Apply updated locale
+    become: yes
+    ansible.builtin.command: update-locale LANG=de_DE.UTF-8
+    register: update_locale
+    changed_when: update_locale.rc == 0
+
   - name: Create systemd user directory for terminal
     become: yes
     ansible.builtin.file:
