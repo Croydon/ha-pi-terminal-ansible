@@ -44,13 +44,6 @@
     register: update_locale
     changed_when: update_locale.rc == 0
 
-  - name: Remove legacy Firefox user service
-    become: yes
-    ansible.builtin.file:
-      path: /home/terminal/.config/systemd/user/firefox-terminal.service
-      state: absent
-    register: legacy_service
-
   - name: Create labwc configuration directory
     become: yes
     ansible.builtin.file:
@@ -71,13 +64,6 @@
         #!/bin/sh
         /usr/bin/firefox --kiosk >/dev/null 2>&1 &
     register: labwc_autostart
-
-  - name: Remove legacy XDG Firefox autostart entry
-    become: yes
-    ansible.builtin.file:
-      path: /home/terminal/.config/autostart/firefox-terminal.desktop
-      state: absent
-    register: xdg_autostart_removed
 
   - name: Set Firefox as default browser via mimeapps.list
     become: yes
@@ -105,6 +91,4 @@
       reboot_timeout: 3600
     when: >-
       apt_result.changed or
-      legacy_service.changed or
-      labwc_autostart.changed or
-      xdg_autostart_removed.changed
+      labwc_autostart.changed
