@@ -16,11 +16,17 @@
       state: present
       update_cache: no
 
+  - name: Enable de_DE UTF-8 locale
+    become: yes
+    ansible.builtin.lineinfile:
+      path: /etc/locale.gen
+      regexp: '^\s*#?\s*de_DE\.UTF-8\s+UTF-8\s*$'
+      line: de_DE.UTF-8 UTF-8
+      state: present
+
   - name: Generate de_DE UTF-8 locale
     become: yes
     ansible.builtin.command: locale-gen de_DE.UTF-8
-    args:
-      creates: /usr/lib/locale/de_DE.utf8
     register: locale_gen
     changed_when: locale_gen.rc == 0
 
