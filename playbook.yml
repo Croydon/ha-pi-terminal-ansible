@@ -62,7 +62,7 @@
       mode: "0755"
       content: |
         #!/bin/sh
-        /usr/bin/firefox --kiosk >/dev/null 2>&1 &
+        /usr/bin/firefox --kiosk {{ kiosk_website }} >/dev/null 2>&1 &
     register: labwc_autostart
 
   - name: Set Firefox as default browser via mimeapps.list
