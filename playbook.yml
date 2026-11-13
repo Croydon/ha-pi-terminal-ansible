@@ -11,7 +11,7 @@
     ansible.builtin.apt:
       update_cache: yes
       autoremove: yes
-      upgrade: yes
+      upgrade: dist
     register: apt_result
 
   - name: Ensure locales package is installed
