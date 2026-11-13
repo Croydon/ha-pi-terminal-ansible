@@ -3,4 +3,3 @@ terminals:
     terminal1:
       ansible_host: 192.168.188.111
       hostname: terminal-1
-      kiosk_website: http://192.168.188.34:8123

@@ -95,7 +95,7 @@
 
   - name: Install Firefox policies
     become: yes
-    ansible.builtin.copy:
+    ansible.builtin.template:
       src: terminals/files/firefox/policies.json
       dest: /usr/lib/firefox/distribution/policies.json
       owner: root
