@@ -29,11 +29,17 @@
       line: de_DE.UTF-8 UTF-8
       state: present
 
+  - name: Check generated locales
+    become: yes
+    ansible.builtin.command: locale -a
+    register: available_locales
+    changed_when: false
+
   - name: Generate de_DE UTF-8 locale
     become: yes
     ansible.builtin.command: locale-gen de_DE.UTF-8
     register: locale_gen
-    changed_when: locale_gen.rc == 0
+    when: "'de_DE.utf8' not in available_locales.stdout_lines"
 
   - name: Set system default locale to German
     become: yes
@@ -47,7 +53,7 @@
     become: yes
     ansible.builtin.command: update-locale LANG=de_DE.UTF-8
     register: update_locale
-    changed_when: update_locale.rc == 0
+    when: locale_file.changed
 
   - name: Create labwc configuration directory
     become: yes
@@ -69,6 +75,32 @@
         #!/bin/sh
         /usr/bin/firefox --kiosk {{ kiosk_website }} >/dev/null 2>&1 &
     register: labwc_autostart
+
+  - name: Find Firefox profiles
+    become: yes
+    ansible.builtin.find:
+      paths: /home/terminal/.config/mozilla/firefox
+      patterns: "*.default-release"
+      file_type: directory
+      recurse: no
+    register: firefox_profiles
+
+  - name: Require an existing Firefox profile
+    ansible.builtin.assert:
+      that:
+        - firefox_profiles.matched | int > 0
+      fail_msg: Firefox profile not found under /home/terminal/.config/mozilla/firefox
+
+  - name: Install Firefox preferences
+    become: yes
+    ansible.builtin.copy:
+      src: terminals/files/firefox/user.js
+      dest: "{{ item.path }}/user.js"
+      owner: terminal
+      group: terminal
+      mode: "0644"
+    loop: "{{ firefox_profiles.files }}"
+    register: firefox_user_js
 
   - name: Set Firefox as default browser via mimeapps.list
     become: yes
@@ -96,4 +128,5 @@
       reboot_timeout: 3600
     when: >-
       apt_result.changed or
-      labwc_autostart.changed
+      labwc_autostart.changed or
+      firefox_user_js.changed
